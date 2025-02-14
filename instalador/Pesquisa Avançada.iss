@@ -5,14 +5,17 @@
 AppName=Pesquisa Avançada
 AppVersion=1.0
 DefaultDirName={autopf}\Pesquisa Avançada
-OutputDir=.\output
+OutputDir=C:\Users\tteus\OneDrive\Documentos\programa teste v2\instalador\output
 OutputBaseFilename=Instalador_Pesquisa_Avancada
 Compression=lzma
 SolidCompression=yes
 
 [Files]
-Source: "C:\Caminho\Para\O\Arquivo\Pesquisa Avançada.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "C:\Users\tteus\OneDrive\Documentos\programa teste v2\dist\Pesquisa Avançada.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "C:\Users\tteus\OneDrive\Documentos\programa teste v2\icone.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\Pesquisa Avançada"; Filename: "{app}\Pesquisa Avançada.exe"
-Name: "{desktop}\Pesquisa Avançada"; Filename: "{app}\Pesquisa Avançada.exe"
+Name: "{group}\Pesquisa Avançada"; Filename: "{app}\Pesquisa Avançada.exe"; IconFilename: "{app}\icone.ico"
+; Name: "{desktop}\Pesquisa Avançada"; Filename: "{app}\Pesquisa Avançada.exe"; IconFilename: "{app}\icone.ico"
+
+
