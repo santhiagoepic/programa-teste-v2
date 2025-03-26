@@ -1,0 +1,259 @@
+pip install pymupdf pandas openpyxl python-docx python-pptx ttkthemes tqdm
+Caso precise do Tkinter, ele já vem por padrão no Python, mas se estiver usando Linux, pode ser necessário instalá-lo separadamente:
+
+
+sudo apt-get install python3-tk
+
+
+📜 Explicação das bibliotecas:
+pymupdf (fitz) → Para ler arquivos PDF.
+
+pandas → Para manipular arquivos Excel.
+
+openpyxl → Necessário para abrir arquivos Excel (.xlsx).
+
+python-docx → Para ler arquivos Word (.docx).
+
+python-pptx → Para acessar arquivos PowerPoint (.pptx).
+
+ttkthemes → Para personalizar a interface gráfica.
+
+tqdm → Para exibir uma barra de progresso no terminal.
+
+Esse código é um programa em Python que cria uma interface gráfica para buscar uma palavra-chave em arquivos PDF, Word, Excel e PowerPoint dentro de um diretório. Ele usa diversas bibliotecas para leitura de arquivos, interface gráfica e processamento assíncrono. Vou explicar cada parte detalhadamente.
+
+Importação de Bibliotecas
+python
+Copiar
+Editar
+import fitz  # PyMuPDF para manipular PDFs
+import pandas as pd  # Manipulação de arquivos Excel
+import os  # Manipulação de diretórios e arquivos
+import docx  # Leitura de arquivos Word
+import pptx  # Leitura de arquivos PowerPoint
+import tkinter as tk  # Interface gráfica
+from tkinter import filedialog, messagebox, ttk  # Componentes da interface gráfica
+from ttkthemes import ThemedTk  # Temas visuais para a interface
+from tqdm import tqdm  # Barra de progresso no terminal
+import threading  # Para rodar a busca em uma thread separada
+fitz (PyMuPDF): lê arquivos PDF.
+
+pandas: manipula arquivos Excel (.xlsx).
+
+os: acessa arquivos e pastas do sistema operacional.
+
+docx: lê documentos Word (.docx).
+
+pptx: lê apresentações PowerPoint (.pptx).
+
+tkinter: cria a interface gráfica (GUI).
+
+ttkthemes: permite aplicar temas visuais ao tkinter.
+
+tqdm: mostra uma barra de progresso no terminal.
+
+threading: executa a busca sem travar a interface.
+
+Variáveis Globais
+python
+Copiar
+Editar
+search_in_progress = False
+cancel_search = False
+Essas variáveis globais controlam se a busca está em andamento (search_in_progress) e permitem o cancelamento (cancel_search).
+
+Função de Busca
+python
+Copiar
+Editar
+def search_files(directory, keyword, search_pdf, search_docx, search_xlsx, search_pptx, progress_var, progress_label, result_text, show_file_info):
+Essa função percorre os arquivos da pasta especificada e procura pela palavra-chave dentro de arquivos PDF, Word, Excel e PowerPoint.
+
+1. Coleta os arquivos do diretório
+python
+Copiar
+Editar
+files = []
+for root, _, filenames in os.walk(directory):
+    for file in filenames:
+        if (search_pdf and file.endswith(".pdf")) or \
+           (search_docx and file.endswith(".docx")) or \
+           (search_xlsx and file.endswith(".xlsx")) or \
+           (search_pptx and file.endswith(".pptx")):
+            files.append(os.path.join(root, file))
+Usa os.walk() para percorrer todas as pastas dentro do diretório escolhido.
+
+Filtra os arquivos pelos tipos marcados pelo usuário (.pdf, .docx, .xlsx, .pptx).
+
+Adiciona os caminhos dos arquivos à lista files.
+
+2. Inicializa a barra de progresso
+python
+Copiar
+Editar
+total_files = len(files)
+progress_step = 100 / total_files if total_files else 0
+progress = 0
+Calcula o progresso da busca com base no número total de arquivos.
+
+3. Percorre os arquivos e busca a palavra-chave
+python
+Copiar
+Editar
+for file_path in tqdm(files, desc="Searching", unit="file"):
+Usa tqdm para exibir uma barra de progresso no terminal.
+
+Busca no nome do arquivo
+python
+Copiar
+Editar
+if keyword.lower() in file_name.lower():
+    results.append(f"{file_name} (Nome do arquivo){file_info}")
+    found = True
+Se a palavra-chave estiver no nome do arquivo, ele já adiciona aos resultados.
+
+Busca dentro de arquivos
+python
+Copiar
+Editar
+if file_path.endswith(".pdf") and search_pdf:
+    with fitz.open(file_path) as pdf_doc:
+        for page_num in range(len(pdf_doc)):
+            text = pdf_doc[page_num].get_text()
+            if keyword.lower() in text.lower():
+                results.append(f"{file_name} - Página {page_num + 1}{file_info}")
+                found = True
+                break
+Abre cada página do PDF e verifica se a palavra aparece no texto.
+
+python
+Copiar
+Editar
+elif file_path.endswith(".docx") and search_docx:
+    doc = docx.Document(file_path)
+    for para in doc.paragraphs:
+        if keyword.lower() in para.text.lower():
+            results.append(f"{file_name} (Word){file_info}")
+            found = True
+            break
+Percorre os parágrafos dos arquivos Word (.docx) e procura a palavra.
+
+python
+Copiar
+Editar
+elif file_path.endswith(".xlsx") and search_xlsx:
+    df = pd.read_excel(file_path, engine='openpyxl')
+    if df.astype(str).apply(lambda x: x.str.contains(keyword, case=False, na=False)).any().any():
+        results.append(f"{file_name} (Excel){file_info}")
+        found = True
+Converte os dados do Excel em texto e verifica se a palavra-chave está presente.
+
+python
+Copiar
+Editar
+elif file_path.endswith(".pptx") and search_pptx:
+    presentation = pptx.Presentation(file_path)
+    for slide_num, slide in enumerate(presentation.slides, start=1):
+        for shape in slide.shapes:
+            if hasattr(shape, "text") and keyword.lower() in shape.text.lower():
+                results.append(f"{file_name} - Slide {slide_num}{file_info}")
+                found = True
+                break
+Percorre os slides do PowerPoint e verifica se a palavra está no texto.
+
+4. Atualiza a barra de progresso
+python
+Copiar
+Editar
+progress += progress_step
+progress_var.set(progress)
+progress_label.update()
+Atualiza a barra de progresso da interface.
+
+5. Exibe os resultados
+python
+Copiar
+Editar
+search_in_progress = False
+result_text.delete(1.0, tk.END)
+result_text.insert(tk.END, "\n".join(results) if results else "Nenhum resultado encontrado.")
+Exibe os arquivos encontrados ou a mensagem "Nenhum resultado encontrado".
+
+Função para Iniciar a Busca
+python
+Copiar
+Editar
+def start_search():
+    if search_in_progress:
+        messagebox.showwarning("Aviso", "A busca já está em andamento.")
+        return
+Impede que outra busca seja iniciada antes da anterior terminar.
+
+python
+Copiar
+Editar
+threading.Thread(target=search_files, args=(directory, keyword, ...)).start()
+Inicia a busca em uma thread separada para não travar a interface.
+
+Função para Cancelar a Busca
+python
+Copiar
+Editar
+def cancel_search_func():
+    global cancel_search
+    if search_in_progress:
+        cancel_search = True
+        messagebox.showinfo("Busca Cancelada", "A busca foi cancelada.")
+Define cancel_search = True, interrompendo o loop da busca.
+
+Interface Gráfica
+python
+Copiar
+Editar
+root = ThemedTk(theme="arc")
+root.title("Busca de Arquivos")
+root.geometry("720x720")
+Define a janela principal com um tema personalizado.
+
+python
+Copiar
+Editar
+frame = ttk.Frame(root, padding=10)
+frame.pack(fill=tk.BOTH, expand=True)
+Cria um frame para organizar os elementos.
+
+Entrada de Dados
+python
+Copiar
+Editar
+directory_entry = ttk.Entry(frame)
+keyword_entry = ttk.Entry(frame)
+Campos de entrada para palavra-chave e diretório.
+
+Botão para Escolher Pasta
+python
+Copiar
+Editar
+def browse_directory():
+    directory = filedialog.askdirectory()
+    directory_entry.insert(0, directory)
+Permite ao usuário escolher um diretório.
+
+Checkboxes para Tipos de Arquivo
+python
+Copiar
+Editar
+search_pdf = tk.BooleanVar()
+pdf_check = ttk.Checkbutton(frame, text="PDF", variable=search_pdf)
+Checkbox para ativar/desativar a busca em PDFs, Word, Excel e PowerPoint.
+
+Botões
+python
+Copiar
+Editar
+search_button = ttk.Button(frame, text="Buscar", command=start_search)
+cancel_button = ttk.Button(frame, text="Cancelar Busca", command=cancel_search_func)
+Botões para iniciar e cancelar a busca.
+
+Conclusão
+Esse código cria uma ferramenta completa para buscar palavras-chave em documentos, com interface intuitiva, barra de progresso e suporte a cancelamento.
